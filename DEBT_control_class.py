@@ -17,7 +17,7 @@ np.random.seed(0)
 import matplotlib.pyplot as plt
 from utils.PCN_Dynamics_class import PCNDynamics
 
-class FlowController(PCNDynamics):
+class DEBT_Control_Protocol(PCNDynamics):
     # This function initializes the whole system
     def __init__(self, params, demand_params, price_threshold):
         super().__init__(params) # sets up the PCN and establishes its routes
@@ -127,179 +127,180 @@ def total_average(x):
     #     averaged_vec[i] = (i/i+1.0)*averaged_vec[i-1] + 1.0/(i+1)*x[i]
     return averaged_vec
 
-params = dict()
-params["custom"] = False
-# params["capacity_matrix"] = np.array([[0, 100, 100], [100, 0, 100], [100, 100, 0]])
-# params["capacity_matrix"] = np.array([[0, 100, 0], [100, 0, 100], [0, 100, 0]])
-params["num_vertices"] = 6
-params["average_degree"] = 3
-params["average_capacity"] = 200
-params["custom_routes"] = False
-params["num_paths"] = 2
-params["price_update_step_size"] = 0.005
-demand_params = dict()
-demand_params["custom"] = False
-# demand_params["demand_matrix"] = np.array([[0, 0, 10], [10, 0, 10], [10, 0, 0]])
-demand_params["mean"] = 10
-demand_params["sparsity"] = 0.5
-random_demand_params = dict()
-random_demand_params["distribution"] = "deterministic"
-demand_params["random"] = random_demand_params
-price_threshold = (3.0, 3.3)
-if params["custom"]:
-    n = len(params["capacity_matrix"])
-else:
-    n = params["num_vertices"]
-T = 3000
-averaging_window = 1
+if __name__ == "__main__":
+    params = dict()
+    params["custom"] = False
+    # params["capacity_matrix"] = np.array([[0, 100, 100], [100, 0, 100], [100, 100, 0]])
+    # params["capacity_matrix"] = np.array([[0, 100, 0], [100, 0, 100], [0, 100, 0]])
+    params["num_vertices"] = 6
+    params["average_degree"] = 3
+    params["average_capacity"] = 200
+    params["custom_routes"] = False
+    params["num_paths"] = 2
+    params["price_update_step_size"] = 0.005
+    demand_params = dict()
+    demand_params["custom"] = False
+    # demand_params["demand_matrix"] = np.array([[0, 0, 10], [10, 0, 10], [10, 0, 0]])
+    demand_params["mean"] = 10
+    demand_params["sparsity"] = 0.5
+    random_demand_params = dict()
+    random_demand_params["distribution"] = "deterministic"
+    demand_params["random"] = random_demand_params
+    price_threshold = (3.0, 3.3)
+    if params["custom"]:
+        n = len(params["capacity_matrix"])
+    else:
+        n = params["num_vertices"]
+    T = 3000
+    averaging_window = 1
 
-myFC = FlowController(params, demand_params, price_threshold)
-# create arrays to store flows and prices
-flows_data = dict()
-for i in range(n):
-    for j in range(n):
-        if i == j:
-            continue
-        flows_data[(i,j)] = np.zeros((T,len(myFC.paths[(i,j)])))
-path_price_data = dict()
-for i in range(n):
-    for j in range(n):
-        if i == j:
-            continue
-        path_price_data[(i,j)] = np.zeros((T,len(myFC.paths[(i,j)])))
-edge_price_data = np.zeros((T, n, n))
-reset_data = np.zeros((T, n, n))
-
-
-for t in range(T):
-    myFC.loop()
-    edge_price_data[t] = myFC.link_prices.copy()
-    for key in flows_data.keys():
-        flows_data[key][t] = myFC.flow_requests[key]
-        path_price_data[key][t] = myFC.path_prices[key]
-        reset_data[t] = myFC.channels_reset
-
-alphabets = ['A', 'B', 'C', 'D', 'E', 'F']
-plt.close("all")
-plt.figure(figsize=(6,4))
-for i in range(n):
-    for j in range(n):
-        if myFC.demands[i,j] > 0:
-            plt.plot(moving_average(np.sum(flows_data[(i,j)], axis=1), averaging_window), label = alphabets[i] + "->" + alphabets[j])
-            # plt.plot(total_average(np.sum(flows_data[(i,j)], axis=1)), label = str(i) + "->" + str(j) + "flow; demand "+str(myFC.demands[i,j]))
-            # plt.plot(np.sum(flows_data[(i,j)], axis=1), label = alphabets[i] + "->" + alphabets[j])
-# plt.plot(flows_data[(0,1)][:,0], label = "short path", marker = 's', linestyle='none')
-# plt.plot(flows_data[(0,1)][:,1], label = "long path", marker = 's', linestyle='none')
-# plt.plot(np.sum(flows_data[(0,1)], axis=1), label = "total flow")
-# plt.plot(np.sum(flows_data[(1,0)], axis=1), label = "B->A flow", marker = 's', linestyle='none')
-# plt.plot(np.sum(flows_data[(1,2)], axis=1), label = "B->C flow", marker = 'v', linestyle='none',ms=4)
-# plt.plot(np.sum(flows_data[(0,2)], axis=1), label = "A->C flow", marker = 's', linestyle='none')
-# plt.plot(np.sum(flows_data[(2,0)], axis=1), label = "C->A flow", marker = 'v', linestyle='none',ms=4)
-# plt.legend()
-plt.xlabel("Time", size = 14)
-plt.xticks(fontsize=10)
-plt.ylabel("Flow Amount", size = 14)
-plt.yticks(fontsize=10)
-plt.title("Flows as a function of time", size=16)
-plt.tight_layout()
-# plt.savefig('flows_1.pdf')
-
-plt.figure(figsize=(6,4))
-for i in range(n):
-    for j in range(n):
-        if myFC.demands[i,j] > 0:
-            plt.plot(moving_average(edge_price_data[:, i, j], averaging_window), label = alphabets[i] + "->" + alphabets[j])
-            # plt.plot(total_average(np.min(path_price_data[(i,j)], axis=1)), label = str(i) + "->" + str(j) + " price")
-            # plt.plot(np.min(path_price_data[(i,j)], axis=1), label = alphabets[i] + "->" + alphabets[j])
-# plt.plot(path_price_data[(0,1)][:,0], label = "short path")
-# plt.plot(path_price_data[(0,1)][:,1], label = "long path")
-# plt.plot(np.min(path_price_data[(0,1)], axis=1), label = "minimum price", marker = 's', linestyle = 'none')
-# plt.plot(np.min(path_price_data[(1,0)], axis=1), label = "B->A price", marker = 's', linestyle='none')
-# plt.plot(np.min(path_price_data[(1,2)], axis=1), label = "B->C price", marker = 'v', linestyle='none',ms=4)
-# plt.plot(np.min(path_price_data[(0,2)], axis=1), label = "A->C price", marker = 's', linestyle='none')
-# plt.plot(np.min(path_price_data[(2,0)], axis=1), label = "C->A price", marker = 'v', linestyle='none',ms=4)
-
-plt.axhline(y=price_threshold[0], color='k', linestyle='--', label= "price threshold")
-plt.axhline(y=price_threshold[1], color='k', linestyle='--')
-# plt.legend()
-plt.xlabel("Time", size = 14)
-plt.xticks(fontsize=10)
-plt.ylabel("Price", size = 14)
-plt.yticks(fontsize=10)
-plt.title("Path prices as a function of time", size = 16)
-plt.tight_layout()
-# plt.savefig('prices_1.pdf')
-
-plt.figure(figsize=(6,4))
-for i in range(n):
-    for j in range(i):
-        if myFC.capacities[i, j] > 0:
-            plt.plot(moving_average(np.min(path_price_data[(i,j)], axis=1), 1), label = "channel " + alphabets[i] + "-" + alphabets[j])
-            # plt.plot(total_average(np.min(path_price_data[(i,j)], axis=1)), label = str(i) + "->" + str(j) + " price")
-            # plt.plot(np.min(path_price_data[(i,j)], axis=1), label = alphabets[i] + "->" + alphabets[j])
-# plt.plot(path_price_data[(0,1)][:,0], label = "short path")
-# plt.plot(path_price_data[(0,1)][:,1], label = "long path")
-# plt.plot(np.min(path_price_data[(0,1)], axis=1), label = "minimum price", marker = 's', linestyle = 'none')
-# plt.plot(np.min(path_price_data[(1,0)], axis=1), label = "B->A price", marker = 's', linestyle='none')
-# plt.plot(np.min(path_price_data[(1,2)], axis=1), label = "B->C price", marker = 'v', linestyle='none',ms=4)
-# plt.plot(np.min(path_price_data[(0,2)], axis=1), label = "A->C price", marker = 's', linestyle='none')
-# plt.plot(np.min(path_price_data[(2,0)], axis=1), label = "C->A price", marker = 'v', linestyle='none',ms=4)
-
-# plt.axhline(y=price_threshold[0], color='k', linestyle='--', label= "price threshold")
-# plt.axhline(y=price_threshold[1], color='k', linestyle='--')
-plt.legend()
-plt.xlabel("Time", size = 14)
-plt.xticks(fontsize=10)
-plt.ylabel("Price", size = 14)
-plt.yticks(fontsize=10)
-plt.title("Edge prices as a function of time", size = 16)
-plt.tight_layout()
-
-plt.figure(figsize=(6,4))
-for i in range(n):
-    for j in range(i):
-        if myFC.capacities[i, j] > 0:
-            plt.plot(reset_data[:,i,j], label = "channel " + alphabets[i] + "-" + alphabets[j], marker = 's', linestyle='none')
-plt.legend()
-plt.xlabel("Time", size = 14)
-plt.xticks(fontsize=10)
-plt.title("Channel Resets", size = 16)
-plt.tight_layout()
+    myFC = FlowController(params, demand_params, price_threshold)
+    # create arrays to store flows and prices
+    flows_data = dict()
+    for i in range(n):
+        for j in range(n):
+            if i == j:
+                continue
+            flows_data[(i,j)] = np.zeros((T,len(myFC.paths[(i,j)])))
+    path_price_data = dict()
+    for i in range(n):
+        for j in range(n):
+            if i == j:
+                continue
+            path_price_data[(i,j)] = np.zeros((T,len(myFC.paths[(i,j)])))
+    edge_price_data = np.zeros((T, n, n))
+    reset_data = np.zeros((T, n, n))
 
 
-# plt.figure()
-# for t in range(T):
-#     if reset_data[t, 1, 0]:
-#         plt.axvline(x = t, color = 'b')
-#     if reset_data[t, 1, 2]:
-#         plt.axvline(x = t, color = 'r')
-# plt.xlim([0, T])
+    for t in range(T):
+        myFC.loop()
+        edge_price_data[t] = myFC.link_prices.copy()
+        for key in flows_data.keys():
+            flows_data[key][t] = myFC.flow_requests[key]
+            path_price_data[key][t] = myFC.path_prices[key]
+            reset_data[t] = myFC.channels_reset
 
-# for i in range(n):
-#     for j in range(n):
-#         if myFC.demands[i,j] > 0:
-#             plt.figure()
-#             plt.plot(moving_average(np.sum(flows_data[(i,j)], axis=1), averaging_window), label = str(i) + "->" + str(j) + "flow; demand "+str(myFC.demands[i,j]))
-#             plt.plot(moving_average(np.min(path_price_data[(i,j)], axis=1), averaging_window), label = str(i) + "->" + str(j) + " price") #plot on other y-axis
-# plt.legend()
-# what quantities should be plotted?
-# the flows, among every pair there is a demand
-# the path price, among every pair there is a demand
-# time averaged versions of these.
+    alphabets = ['A', 'B', 'C', 'D', 'E', 'F']
+    plt.close("all")
+    plt.figure(figsize=(6,4))
+    for i in range(n):
+        for j in range(n):
+            if myFC.demands[i,j] > 0:
+                plt.plot(moving_average(np.sum(flows_data[(i,j)], axis=1), averaging_window), label = alphabets[i] + "->" + alphabets[j])
+                # plt.plot(total_average(np.sum(flows_data[(i,j)], axis=1)), label = str(i) + "->" + str(j) + "flow; demand "+str(myFC.demands[i,j]))
+                # plt.plot(np.sum(flows_data[(i,j)], axis=1), label = alphabets[i] + "->" + alphabets[j])
+    # plt.plot(flows_data[(0,1)][:,0], label = "short path", marker = 's', linestyle='none')
+    # plt.plot(flows_data[(0,1)][:,1], label = "long path", marker = 's', linestyle='none')
+    # plt.plot(np.sum(flows_data[(0,1)], axis=1), label = "total flow")
+    # plt.plot(np.sum(flows_data[(1,0)], axis=1), label = "B->A flow", marker = 's', linestyle='none')
+    # plt.plot(np.sum(flows_data[(1,2)], axis=1), label = "B->C flow", marker = 'v', linestyle='none',ms=4)
+    # plt.plot(np.sum(flows_data[(0,2)], axis=1), label = "A->C flow", marker = 's', linestyle='none')
+    # plt.plot(np.sum(flows_data[(2,0)], axis=1), label = "C->A flow", marker = 'v', linestyle='none',ms=4)
+    # plt.legend()
+    plt.xlabel("Time", size = 14)
+    plt.xticks(fontsize=10)
+    plt.ylabel("Flow Amount", size = 14)
+    plt.yticks(fontsize=10)
+    plt.title("Flows as a function of time", size=16)
+    plt.tight_layout()
+    # plt.savefig('flows_1.pdf')
 
-## SUMMARY OF SIMULATIONS ON March 3, 2022
-# When the demand is [[0, 0, 10], [10, 0, 10], [10, 0, 0]], i.e., classical deadlock example,
-# Then any (small enough) strictly positive threshold will give the optimal flow.
-# However, if the threshold is too large, the deadlock-causing flow cannot be prevented,
-# The steady-state flow will become zero
+    plt.figure(figsize=(6,4))
+    for i in range(n):
+        for j in range(n):
+            if myFC.demands[i,j] > 0:
+                plt.plot(moving_average(edge_price_data[:, i, j], averaging_window), label = alphabets[i] + "->" + alphabets[j])
+                # plt.plot(total_average(np.min(path_price_data[(i,j)], axis=1)), label = str(i) + "->" + str(j) + " price")
+                # plt.plot(np.min(path_price_data[(i,j)], axis=1), label = alphabets[i] + "->" + alphabets[j])
+    # plt.plot(path_price_data[(0,1)][:,0], label = "short path")
+    # plt.plot(path_price_data[(0,1)][:,1], label = "long path")
+    # plt.plot(np.min(path_price_data[(0,1)], axis=1), label = "minimum price", marker = 's', linestyle = 'none')
+    # plt.plot(np.min(path_price_data[(1,0)], axis=1), label = "B->A price", marker = 's', linestyle='none')
+    # plt.plot(np.min(path_price_data[(1,2)], axis=1), label = "B->C price", marker = 'v', linestyle='none',ms=4)
+    # plt.plot(np.min(path_price_data[(0,2)], axis=1), label = "A->C price", marker = 's', linestyle='none')
+    # plt.plot(np.min(path_price_data[(2,0)], axis=1), label = "C->A price", marker = 'v', linestyle='none',ms=4)
 
-# When the demand is [[0, 4, 0], [3, 0, 2], [5, 0, 0]], i.e., the non-trivial max-circulation example,
-# Then, if the threshold is too small, the steady-state flow is sub-optimal.
-# However, if the threshold is too large, even then, the steady-state flow is optimal.
-# This is because the demands are deadlock-free.
-# We do run into the issue that flows are requested, but cannot be routed.
+    plt.axhline(y=price_threshold[0], color='k', linestyle='--', label= "price threshold")
+    plt.axhline(y=price_threshold[1], color='k', linestyle='--')
+    # plt.legend()
+    plt.xlabel("Time", size = 14)
+    plt.xticks(fontsize=10)
+    plt.ylabel("Price", size = 14)
+    plt.yticks(fontsize=10)
+    plt.title("Path prices as a function of time", size = 16)
+    plt.tight_layout()
+    # plt.savefig('prices_1.pdf')
+
+    plt.figure(figsize=(6,4))
+    for i in range(n):
+        for j in range(i):
+            if myFC.capacities[i, j] > 0:
+                plt.plot(moving_average(np.min(path_price_data[(i,j)], axis=1), 1), label = "channel " + alphabets[i] + "-" + alphabets[j])
+                # plt.plot(total_average(np.min(path_price_data[(i,j)], axis=1)), label = str(i) + "->" + str(j) + " price")
+                # plt.plot(np.min(path_price_data[(i,j)], axis=1), label = alphabets[i] + "->" + alphabets[j])
+    # plt.plot(path_price_data[(0,1)][:,0], label = "short path")
+    # plt.plot(path_price_data[(0,1)][:,1], label = "long path")
+    # plt.plot(np.min(path_price_data[(0,1)], axis=1), label = "minimum price", marker = 's', linestyle = 'none')
+    # plt.plot(np.min(path_price_data[(1,0)], axis=1), label = "B->A price", marker = 's', linestyle='none')
+    # plt.plot(np.min(path_price_data[(1,2)], axis=1), label = "B->C price", marker = 'v', linestyle='none',ms=4)
+    # plt.plot(np.min(path_price_data[(0,2)], axis=1), label = "A->C price", marker = 's', linestyle='none')
+    # plt.plot(np.min(path_price_data[(2,0)], axis=1), label = "C->A price", marker = 'v', linestyle='none',ms=4)
+
+    # plt.axhline(y=price_threshold[0], color='k', linestyle='--', label= "price threshold")
+    # plt.axhline(y=price_threshold[1], color='k', linestyle='--')
+    plt.legend()
+    plt.xlabel("Time", size = 14)
+    plt.xticks(fontsize=10)
+    plt.ylabel("Price", size = 14)
+    plt.yticks(fontsize=10)
+    plt.title("Edge prices as a function of time", size = 16)
+    plt.tight_layout()
+
+    plt.figure(figsize=(6,4))
+    for i in range(n):
+        for j in range(i):
+            if myFC.capacities[i, j] > 0:
+                plt.plot(reset_data[:,i,j], label = "channel " + alphabets[i] + "-" + alphabets[j], marker = 's', linestyle='none')
+    plt.legend()
+    plt.xlabel("Time", size = 14)
+    plt.xticks(fontsize=10)
+    plt.title("Channel Resets", size = 16)
+    plt.tight_layout()
 
 
-## SUGGESTION: TRY A PRIMAL ALGORITHM OR DUAL ALGORITHM.
-## INVOKE NEDIC'S RESULT
+    # plt.figure()
+    # for t in range(T):
+    #     if reset_data[t, 1, 0]:
+    #         plt.axvline(x = t, color = 'b')
+    #     if reset_data[t, 1, 2]:
+    #         plt.axvline(x = t, color = 'r')
+    # plt.xlim([0, T])
+
+    # for i in range(n):
+    #     for j in range(n):
+    #         if myFC.demands[i,j] > 0:
+    #             plt.figure()
+    #             plt.plot(moving_average(np.sum(flows_data[(i,j)], axis=1), averaging_window), label = str(i) + "->" + str(j) + "flow; demand "+str(myFC.demands[i,j]))
+    #             plt.plot(moving_average(np.min(path_price_data[(i,j)], axis=1), averaging_window), label = str(i) + "->" + str(j) + " price") #plot on other y-axis
+    # plt.legend()
+    # what quantities should be plotted?
+    # the flows, among every pair there is a demand
+    # the path price, among every pair there is a demand
+    # time averaged versions of these.
+
+    ## SUMMARY OF SIMULATIONS ON March 3, 2022
+    # When the demand is [[0, 0, 10], [10, 0, 10], [10, 0, 0]], i.e., classical deadlock example,
+    # Then any (small enough) strictly positive threshold will give the optimal flow.
+    # However, if the threshold is too large, the deadlock-causing flow cannot be prevented,
+    # The steady-state flow will become zero
+
+    # When the demand is [[0, 4, 0], [3, 0, 2], [5, 0, 0]], i.e., the non-trivial max-circulation example,
+    # Then, if the threshold is too small, the steady-state flow is sub-optimal.
+    # However, if the threshold is too large, even then, the steady-state flow is optimal.
+    # This is because the demands are deadlock-free.
+    # We do run into the issue that flows are requested, but cannot be routed.
+
+
+    ## SUGGESTION: TRY A PRIMAL ALGORITHM OR DUAL ALGORITHM.
+    ## INVOKE NEDIC'S RESULT
 

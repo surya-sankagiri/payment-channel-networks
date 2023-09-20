@@ -10,7 +10,7 @@ Created on Mon Feb 28 15:57:20 2022
 # The class PCN contains information about the topology and the capacities of the graph
 # It also contains the set of possible routes between all pairs of nodes
 import numpy as np
-from APSP_class import APSP
+from utils.APSP_class import APSP
 class PCN(APSP):
     # The main function of this class
     def __init__(self, params):

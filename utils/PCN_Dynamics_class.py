@@ -18,7 +18,7 @@ Created on Sun Feb 20 09:57:53 2022
 import numpy as np
 import random
 
-from PCN_class import PCN
+from utils.PCN_class import PCN
 
 class PCNDynamics(PCN):
     # initialize the system to have perfectly balanced channels and the price to be zero
