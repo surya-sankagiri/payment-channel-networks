@@ -7,7 +7,7 @@ Created on Wed Aug  4 09:31:56 2021
 """
 
 # this code generalizes the code in max_circulation.py
-from all_pair_shortest_path import APSP
+from APSP_class import APSP
 import numpy as np
 # np.random.seed(0)
 import matplotlib.pyplot as plt

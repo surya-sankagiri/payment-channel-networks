@@ -15,7 +15,7 @@ Created on Tue Mar  1 11:17:17 2022
 import numpy as np
 np.random.seed(0)
 import matplotlib.pyplot as plt
-from network_discretetime import PCNDynamics
+from utils.PCN_Dynamics_class import PCNDynamics
 
 class FlowController(PCNDynamics):
     # This function initializes the whole system
