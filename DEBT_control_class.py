@@ -154,7 +154,7 @@ if __name__ == "__main__":
     T = 3000
     averaging_window = 1
 
-    myFC = FlowController(params, demand_params, price_threshold)
+    myFC = DEBT_Control_Protocol(params, demand_params, price_threshold)
     # create arrays to store flows and prices
     flows_data = dict()
     for i in range(n):
