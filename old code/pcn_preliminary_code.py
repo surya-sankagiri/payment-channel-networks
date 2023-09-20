@@ -7,7 +7,7 @@ Created on Wed Aug  4 09:31:56 2021
 """
 
 # this code generalizes the code in max_circulation.py
-from APSP_class import APSP
+from utils.APSP_class import APSP
 import numpy as np
 # np.random.seed(0)
 import matplotlib.pyplot as plt
