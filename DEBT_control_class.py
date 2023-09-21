@@ -56,7 +56,7 @@ class DEBT_Control_Protocol(PCNDynamics):
         self.path_prices = dict()
         for i in range(self.n):
             for j in range(self.n):
-                if i == j:
+                if (i,j) not in self.paths.keys():
                     continue
                 self.path_prices[(i,j)] = [np.sum(path*self.link_prices) for path in self.paths[(i,j)]]
 
@@ -64,7 +64,7 @@ class DEBT_Control_Protocol(PCNDynamics):
         self.flow_requests = dict()
         for i in range(self.n):
             for j in range(self.n):
-                if i == j:
+                if (i,j) not in self.paths.keys():
                     continue
                 self.flow_requests[(i,j)] = [0]*len(self.path_prices[(i,j)])
                 min_price = np.min(self.path_prices[(i,j)])
@@ -75,7 +75,7 @@ class DEBT_Control_Protocol(PCNDynamics):
         self.flow_requests = dict()
         for i in range(self.n):
             for j in range(self.n):
-                if i == j:
+                if (i,j) not in self.paths.keys():
                     continue
                 weights = softmax(self.path_prices[(i,j)], c)
                 min_price = np.min(self.path_prices[(i,j)])
