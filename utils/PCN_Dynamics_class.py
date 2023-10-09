@@ -17,56 +17,39 @@ Created on Sun Feb 20 09:57:53 2022
 
 import numpy as np
 import random
+import logging
 
 from utils.PCN_class import PCN
 
 class PCNDynamics(PCN):
-    # initialize the system to have perfectly balanced channels and the price to be zero
     def __init__(self, params):
         super().__init__(params)
-        self.balances = self.capacities/2
+        self.balances = self.capacities/2 # initialize the system to have perfectly balanced channels
+        self._reset()
+        logging.info("finished initializing PCN")
+
+    def _reset(self):
         self.flows_per_edge = np.zeros((self.n, self.n)) # this is the amount that actually flows in either direction in the previous slot
         self.channels_reset = np.zeros((self.n, self.n), dtype = bool) #indicator of which channels were reset; symmetric matrix
-        self.link_prices = np.zeros((self.n, self.n)) # this is an anti symmetric matrix
-        self.requests_per_edge = np.zeros((self.n, self.n)) # this is the amount requested in the previous slot
-        self.step_size = params["price_update_step_size"]
-    # The PCN receives flow_requests as a dictionary, where the keys are (source, destination)
+
+    # The PCN receives flow_requests as a dictionary, where the keys are (source, destination) pairs
     # And the values are a vector of flow amounts, each component for each path.
-    # If the flow is a multipath one, more than one flow components will be positive
+    # If the flow is a multipath one, more than one flow component will be positive
     def execute(self, flow_requests):
-        self.requests_per_edge[:,:] = 0
-        self.flows_per_edge[:,:] = 0
-        self.channels_reset[:,:] = False # stores which channels need to be rebalanced
-        routed = dict() # indicator for which flows are routed
-        # First, order all flow requests in some random permutation
-        flow_requests = list(flow_requests.items())
-        random.shuffle(flow_requests)
-        for SD_pair, flow_vec in flow_requests:
-            # one by one, check whether it is feasible to route 
-            # if feasible, add to flows (to be routed)
-            # if not, mark appropriate channel for rebalancing
-            # in either case, store the request for each channel as potential queue length
-            routed[SD_pair] = self.process_flow(SD_pair, flow_vec)
-        self.update_balances() # based on self.flows_per_edge, self.channels_reset
-        self.update_prices() # based on self.requests_per_edge
-        return routed
-        
-    def process_flow(self, SD_pair, flow_vec):
-        flow_per_path = np.zeros((self.n, self.n))
-        for n in range(len(flow_vec)):
-            flow_per_path += flow_vec[n] * self.paths[SD_pair][n]
-        self.requests_per_edge += flow_per_path
-        link_saturations = (self.flows_per_edge + flow_per_path) > self.balances
-        self.channels_reset += link_saturations
-        feasible = np.sum(link_saturations) == 0
-        if feasible:
-            self.flows_per_edge += flow_per_path
-        return feasible
-        
-    def update_balances(self):
-        self.balances -= self.flows_per_edge - self.flows_per_edge.transpose()
-        self.channels_reset += self.channels_reset.transpose() # to make it 
-        self.balances = self.balances*(1-self.channels_reset) + self.channels_reset*(self.capacities/2)
-        
-    def update_prices(self):
-        self.link_prices += self.step_size*(self.requests_per_edge - self.requests_per_edge.transpose())
+        self._reset()
+        self._flow_transform(flow_requests)
+        self._update_balances()
+        return self.flows_per_edge, self.channels_reset
+
+    def _flow_transform(self, flow_requests):
+        for node_pair, flow_vec in flow_requests.items():
+            logging.debug("flow vector for node pair %s:, %s", node_pair, flow_vec)
+            for p in range(len(flow_vec)):
+                self.flows_per_edge += flow_vec[p] * self.paths[node_pair][p]
+
+    def _update_balances(self):
+        self.balances -= self.flows_per_edge
+        self.balances += self.flows_per_edge.transpose()
+        self.channels_reset = self.balances < 0
+        self.balances += (self.capacities/2)*self.channels_reset
+        self.balances -= (self.capacities/2)*self.channels_reset.transpose()
