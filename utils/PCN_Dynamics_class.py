@@ -43,13 +43,17 @@ class PCNDynamics(PCN):
 
     def _flow_transform(self, flow_requests):
         for node_pair, flow_vec in flow_requests.items():
-            logging.debug("flow vector for node pair %s:, %s", node_pair, flow_vec)
             for p in range(len(flow_vec)):
                 self.flows_per_edge += flow_vec[p] * self.paths[node_pair][p]
+            logging.info("finished calculating flows for node pair %s", node_pair)
 
     def _update_balances(self):
         self.balances -= self.flows_per_edge
         self.balances += self.flows_per_edge.transpose()
+        logging.info("finished updating balances, which are as follows:")
+        logging.debug(self.balances)
         self.channels_reset = self.balances < 0
         self.balances += (self.capacities/2)*self.channels_reset
         self.balances -= (self.capacities/2)*self.channels_reset.transpose()
+        logging.info("finished performing channel resets, now the balances are as follows:")
+        logging.debug(self.balances)
