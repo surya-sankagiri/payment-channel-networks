@@ -110,7 +110,7 @@ class DEBT_Control_Protocol(PCNDynamics):
         else:
             logging.info("performing soft routing")
             self.flow_requests[node_pair] = soft_routing(self.path_prices[node_pair], max_price, demand, self.price_sensitivity[node_pair])
-        logging.debug("flow vector for node pair %s is: %s", self.flow_requests[node_pair])
+        logging.debug("flow vector for node pair %s is: %s", node_pair, self.flow_requests[node_pair])
 
     def update_prices(self):
         self.channel_prices += self.price_stepsize*(self.flows_per_edge - self.flows_per_edge.transpose())
