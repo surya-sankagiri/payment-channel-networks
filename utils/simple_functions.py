@@ -27,6 +27,7 @@ def hard_routing(path_prices, max_price, demand):
     if min_price <= max_price:
         best_path = np.argmin(path_prices)
         flows[best_path] = demand
+    return flows
 
 def soft_routing(path_prices, max_price, demand, sensitivity):
     flows = np.zeros(len(path_prices))
