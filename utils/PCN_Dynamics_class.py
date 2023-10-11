@@ -25,6 +25,8 @@ class PCNDynamics(PCN):
     def __init__(self, params):
         super().__init__(params)
         self.balances = self.capacities/2 # initialize the system to have perfectly balanced channels
+        logging.debug("Initially, the balances are as follows:")
+        logging.debug(self.balances)
         self._reset()
         logging.info("finished initializing PCN")
 
@@ -37,23 +39,31 @@ class PCNDynamics(PCN):
     # If the flow is a multipath one, more than one flow component will be positive
     def execute(self, flow_requests):
         self._reset()
-        self._flow_transform(flow_requests)
+        self._flows_paths_to_edges(flow_requests)
         self._update_balances()
         return self.flows_per_edge, self.channels_reset
 
-    def _flow_transform(self, flow_requests):
+    def _flows_paths_to_edges(self, flow_requests):
         for node_pair, flow_vec in flow_requests.items():
             for p in range(len(flow_vec)):
                 self.flows_per_edge += flow_vec[p] * self.paths[node_pair][p]
             logging.info("finished calculating flows for node pair %s", node_pair)
 
     def _update_balances(self):
+        logging.debug("before routing, the balances are as follows:")
+        logging.debug(self.balances)
+        self.channels_reset = self.balances - self.flows_per_edge < 0
+        self.channels_reset += self.balances + self.flows_per_edge.transpose() > self.capacities
+        self.balances = (self.capacities/2)*self.channels_reset + self.balances*(1 - self.channels_reset)
+        logging.info("finished performing channel resets")
+        logging.debug("the following channels were reset:")
+        logging.debug(self.channels_reset)
+
+        logging.debug("now the balances are as follows:")
+        logging.debug(self.balances)
+
         self.balances -= self.flows_per_edge
         self.balances += self.flows_per_edge.transpose()
-        logging.info("finished updating balances, which are as follows:")
-        logging.debug(self.balances)
-        self.channels_reset = self.balances < 0
-        self.balances += (self.capacities/2)*self.channels_reset
-        self.balances -= (self.capacities/2)*self.channels_reset.transpose()
-        logging.info("finished performing channel resets, now the balances are as follows:")
+        logging.info("finished updating balances")
+        logging.debug("now the balances are as follows:")
         logging.debug(self.balances)
