@@ -82,7 +82,7 @@ class DEBT_Control_Protocol(PCNDynamics):
         self.current_demand = dict()
         for i in range(self.n):
             for j in range(self.n):
-                if self.current_demand_matrix[i,j] > 0:
+                if self.demands[i,j] > 0:
                     self.current_demand[(i,j)] = self.current_demand_matrix[i,j]
         logging.info("finished generating transaction requests")
 
